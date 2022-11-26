@@ -43,3 +43,6 @@ class Mailbox(models.Model):
                              related_name='mailboxes',
                              related_query_name='mailboxes',
                              on_delete=models.SET_NULL)
+
+    class Meta:
+        unique_together = (('user', 'mail_id', 'login', 'password'),)

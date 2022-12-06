@@ -1,5 +1,6 @@
 from django.contrib import admin
-from mail_bot.models import *
+from samples.models import *
 
 
 admin.site.register(User)
+admin.site.register(Mailbox)

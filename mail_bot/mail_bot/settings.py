@@ -37,12 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'samples'
 ]
-
-MY_APPS = (
-    'mail_bot',
-    'management'
-)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -130,5 +126,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Настройки телеграмм бота
 
 TELEGRAM_TOKEN = "5920852971:AAHyWDW_3gOhtEbj26L1yiQzpy-nvmmWcmU"
-
-TELEGRAM_BASE_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"

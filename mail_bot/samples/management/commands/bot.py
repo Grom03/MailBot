@@ -1,10 +1,18 @@
 from django.core.management.base import BaseCommand
 from mail_bot import settings
 from telebot import TeleBot, types
+from samples.management.commands.email_handlers.email_funcs import get_mail_server, get_unseen_mails
 
 from samples.models import User, Mailbox
 
 bot = TeleBot(token=settings.TELEGRAM_TOKEN)
+
+EMAILS = {
+    "Yandex": {
+        "host": "imap.yandex.ru",
+        "port": 993
+    }
+}
 
 def log_errors(func):
     def inner(*args, **kwargs):
@@ -76,6 +84,9 @@ def get_mail_password_and_put_in_db(message, mail_id, mail_login):
           'user': User.objects.get(telegram_id=message.from_user.username)
       }
     )
+
+    mail = get_mail_server(mail_login, message.text)
+    get_unseen_mails(mail, 1)
 
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("Добавить")

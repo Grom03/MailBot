@@ -85,9 +85,6 @@ def get_mail_password_and_put_in_db(message, mail_id, mail_login):
       }
     )
 
-    mail = get_mail_server(mail_login, message.text)
-    get_unseen_mails(mail, 1)
-
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton("Добавить")
     btn2 = types.KeyboardButton("функции")

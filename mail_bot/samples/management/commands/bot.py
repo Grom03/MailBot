@@ -1,10 +1,18 @@
 from django.core.management.base import BaseCommand
 from mail_bot import settings
 from telebot import TeleBot, types
+from samples.management.commands.email_handlers.email_funcs import get_mail_server, get_unseen_mails
 
 from samples.models import User, Mailbox
 
 bot = TeleBot(token=settings.TELEGRAM_TOKEN)
+
+EMAILS = {
+    "Yandex": {
+        "host": "imap.yandex.ru",
+        "port": 993
+    }
+}
 
 def log_errors(func):
     def inner(*args, **kwargs):

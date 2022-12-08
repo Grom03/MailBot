@@ -2,11 +2,16 @@ import imaplib
 import email
 import email.message
 
+
 def get_mail_server(login, password, host, port):
-    mail = imaplib.IMAP4_SSL(host, port)
-    mail.login(login, password)
-    mail.select('INBOX')
-    return mail
+    try:
+        mail = imaplib.IMAP4_SSL(host, port)
+        mail.login(login, password)
+        mail.select('INBOX')
+        return mail
+    except imaplib.IMAP4_SSL.error:
+        return None
+
 
 def get_unseen_mails(mail, mails_number):
     _, data = mail.search(None, "UNSEEN")
@@ -14,7 +19,7 @@ def get_unseen_mails(mail, mails_number):
     ids = data[0]
     id_list = ids.split()
 
-    if (len(id_list) < mails_number):
+    if len(id_list) < mails_number:
         mails_number = len(id_list)
 
     email_bodies = []
@@ -30,4 +35,3 @@ def get_unseen_mails(mail, mails_number):
         email_bodies.append(body)
 
     return email_bodies
-

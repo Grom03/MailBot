@@ -3,23 +3,19 @@ import email
 import email.message
 
 
-def get_mail_server(login, password, host, port):
-    try:
-        mail = imaplib.IMAP4_SSL(host, port)
-        mail.login(login, password)
-        mail.select('INBOX')
-        return mail
-    except imaplib.IMAP4_SSL.error:
-        return None
+ALL = "ALL"
+UNSEEN = "UNSEEN"
+UNANSWERED = "UNANSWERED"
+ANSWERED = "ANSWERED"
 
 
-def get_unseen_mails(mail, mails_number):
-    _, data = mail.search(None, "UNSEEN")
+def get_emails_by_filter(mail, filter, mails_number=None):
+    _, data = mail.search(None, filter)
 
     ids = data[0]
     id_list = ids.split()
 
-    if len(id_list) < mails_number:
+    if not mails_number or len(id_list) < mails_number:
         mails_number = len(id_list)
 
     email_bodies = []
@@ -35,3 +31,29 @@ def get_unseen_mails(mail, mails_number):
         email_bodies.append(body)
 
     return email_bodies
+
+
+def create_filter(message_type, from_mail=None, since=None) -> str:
+    filter = message_type
+    if from_mail:
+        # format "noreply@id.yandex.ru"
+        filter += f" FROM {from_mail}"
+    if since:
+        # format "19-Sep-2022"
+        filter += f" SENTSINCE {since}"
+    print(filter)
+    return filter
+
+
+def get_mail_server(login, password, host, port):
+    try:
+        mail = imaplib.IMAP4_SSL(host, port)
+        mail.login(login, password)
+        mail.select('INBOX')
+        return mail
+    except imaplib.IMAP4_SSL.error:
+        return None
+
+
+def get_unseen_mails(mail, mails_number):
+    print(get_emails_by_filter(mail, create_filter(ALL, "noreply@id.yandex.ru", "19-Sep-2022"), mails_number))

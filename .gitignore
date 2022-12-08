@@ -38,3 +38,6 @@ Thumbs.db
 
 # DB
 *.sqlite3
+
+#handler-saves
+*.save

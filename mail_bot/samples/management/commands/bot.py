@@ -195,16 +195,15 @@ def save_mail(message, mail_login):
     else:
         bot.send_message(message.chat.id, f"Неправильный логин или пароль")
     if mail_id != "":
-        mb, _ = Mailbox.objects.get_or_create(
-            defaults={
-                'mail_id': mail_id,
-                'login': mail_login,
-                'password': mail_password,
-                'user': User.objects.get(telegram_id=message.from_user.username)
-            }
-        )
-        markup = get_default_markup()
-        bot.send_message(message.chat.id, f"Почта успешно добавлена", reply_markup=markup)
+        try:
+            Mailbox.objects.get(mail_id=mail_id, login=mail_login, password=mail_password, user=User.objects.get(telegram_id=message.from_user.username))
+            markup = get_default_markup()
+            bot.send_message(message.chat.id, f"Почта {mail_login} уже добавлена", reply_markup=markup)
+        except Mailbox.DoesNotExist:
+            new_mailbox = Mailbox(mail_id=mail_id, login=mail_login, password=mail_password, user=User.objects.get(telegram_id=message.from_user.username))
+            new_mailbox.save()
+            markup = get_default_markup()
+            bot.send_message(message.chat.id, f"Почта {new_mailbox.login} успешно добавлена", reply_markup=markup)
 
 
 class Command(BaseCommand):

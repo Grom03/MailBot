@@ -3,6 +3,7 @@ from mail_bot import settings
 from telebot import TeleBot, types
 from samples.management.commands.email_handlers.email_funcs import get_mail_server, get_unseen_mails, get_emails_by_filter, create_filter
 import logging
+import time
 
 from samples.models import User, Mailbox
 
@@ -25,10 +26,39 @@ EMAILS = {
 CANCEL_STR = "Отменить"
 ADD_NEW_MAIL_STR = "Добавить новую почту"
 GET_MESSAGES_STR = "Посмотреть недавние сообщения"
+GET_ALL_MAILBOXES = "Мои добавленные почты"
+GET_CURRENT_FILTER = "Оставить текущий фильтр"
+CREATE_NEW_FILTER = "Настроить новый фильтр"
 GET_ALL_NEW_STR = "Показать все новые"
 SET_SENDER_STR = "Указать отправителя"
 SET_DATE_FROM = "Настроить дату начала"
 FILTERS_DONE = "Готово"
+
+FILTER_TYPE = {
+    "Все письма": "ALL",
+    "Непрочитанные": "UNSEEN",
+    "Неотвеченные": "UNANSWERED"
+}
+
+
+def update_filter_in_db(user, mb, filter, filter_translation):
+    mail_box = Mailbox.objects.get(
+        user=user,
+        login=mb.login
+    )
+    mail_box.filter = filter
+    mail_box.filter_translation = filter_translation
+    mail_box.save()
+
+
+def mail_type_markup():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    btn1 = types.KeyboardButton("Все письма")
+    btn2 = types.KeyboardButton("Непрочитанные")
+    btn3 = types.KeyboardButton("Неотвеченные")
+    markup.add(btn1, btn2, btn3)
+    return markup
+
 
 def get_cancel_markup():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -39,18 +69,19 @@ def get_cancel_markup():
 def get_default_markup():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn1 = types.KeyboardButton(ADD_NEW_MAIL_STR)
-    btn2 = types.KeyboardButton("Мои добавленные почты")
+    btn2 = types.KeyboardButton(GET_ALL_MAILBOXES)
     btn3 = types.KeyboardButton(GET_MESSAGES_STR)
     markup.add(btn1, btn2, btn3)
     return markup
 
-def get_default_filters_markup():
+
+def get_current_filter_or_create_new():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton(GET_ALL_NEW_STR)
-    btn2 = types.KeyboardButton(SET_SENDER_STR)
-    btn3 = types.KeyboardButton(SET_DATE_FROM)
-    markup.add(btn1, btn2, btn3)
+    btn1 = types.KeyboardButton(GET_CURRENT_FILTER)
+    btn2 = types.KeyboardButton(CREATE_NEW_FILTER)
+    markup.add(btn1, btn2)
     return markup
+
 
 def get_edit_filters_markup():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -123,45 +154,78 @@ def read_selected_mailbox(message):
     try:
         count = int(message.text) - 1
         mb = mailboxes[count]
-        bot.send_message(message.chat.id, "Настроить фильтры?", reply_markup=get_default_filters_markup())
-        current_filter = 'UNSEEN'
-        bot.register_next_step_handler(message, filter_enricher, current_filter, mb)
+        text = "Ваш текущий фильтр: " + mb.filter_translation + "\n\n\nНастроить новый фильтр или использовать текущий?"
+        bot.send_message(message.chat.id, text, reply_markup=get_current_filter_or_create_new())
+        bot.register_next_step_handler(message, new_filter_or_default, mb)
     except:
         bot.send_message(message.chat.id, "Ошибка, попробуйте позже", reply_markup=get_default_markup())
+
+
+def new_filter_or_default(message, mb):
+    if message.text == GET_CURRENT_FILTER:
+        show_messages(message, mb.filter, mb)
+    if message.text == CREATE_NEW_FILTER:
+        bot.send_message(
+            message.chat.id,
+            "Укажите тип писем, которые вы хотите получить:",
+            reply_markup=mail_type_markup()
+        )
+        current_filter = ""
+        filter_translation = ""
+        bot.register_next_step_handler(message, add_type_filter, current_filter, filter_translation, mb)
+
+
+def add_type_filter(message, current_filter, filter_translation, mb):
+    current_filter += FILTER_TYPE[message.text]
+    filter_translation += message.text
+    bot.send_message(message.chat.id, "Фильтр добавлен", reply_markup=get_edit_filters_markup())
+    bot.register_next_step_handler(message, filter_enricher, current_filter, filter_translation, mb)
     
 
-def filter_enricher(message, current_filter, mb):
+def filter_enricher(message, current_filter, filter_translation, mb):
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Отмена", reply_markup=get_default_markup())
         return
-    if message.text == GET_ALL_NEW_STR or message.text == FILTERS_DONE:
+    if message.text == FILTERS_DONE:
+        update_filter_in_db(
+            user=User.objects.get(telegram_id=message.from_user.username),
+            mb=mb,
+            filter=current_filter,
+            filter_translation=filter_translation
+        )
         show_messages(message, current_filter, mb)
     if message.text == SET_SENDER_STR:
         bot.send_message(message.chat.id, "Укажите желаемого отправителя", reply_markup=get_cancel_markup())
         new_filter_type = "FROM"
-        bot.register_next_step_handler(message, filter_enricher_ack, current_filter, new_filter_type, mb)
+        filter_translation += " от "
+        bot.register_next_step_handler(message, filter_enricher_ack, current_filter, new_filter_type, filter_translation, mb)
     if message.text == SET_DATE_FROM:
         bot.send_message(message.chat.id, "Укажите желаемую дату начала в формате 19-Sep-2022", reply_markup=get_cancel_markup())
         new_filter_type = "SENTSINCE"
-        bot.register_next_step_handler(message, filter_enricher_ack, current_filter, new_filter_type, mb)
+        filter_translation += " после "
+        bot.register_next_step_handler(message, filter_enricher_ack, current_filter, new_filter_type, filter_translation, mb)
 
-def filter_enricher_ack(message, current_filter, new_filter_type, mb):
+def filter_enricher_ack(message, current_filter, new_filter_type, filter_translation, mb):
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Отмена", reply_markup=get_edit_filters_markup())
         return
     current_filter += f' {new_filter_type} {message.text}'
+    filter_translation += message.text
     bot.send_message(message.chat.id, "Фильтр добавлен", reply_markup=get_edit_filters_markup())
-    bot.register_next_step_handler(message, filter_enricher, current_filter, mb)
+    bot.register_next_step_handler(message, filter_enricher, current_filter, filter_translation, mb)
 
 
 def show_messages(message, filter, mb: Mailbox):
     print("showing emails ", mb.login, mb.password)
-    # TODO custom HOST and PORT
-    mail_server = get_mail_server(mb.login, mb.password, EMAILS["Yandex"]["host"], EMAILS["Yandex"]["port"])
-    # TODO custom mails number
-    get_emails_by_filter(mail_server, filter, 1)
-    text = get_emails_by_filter[0]
-    bot.send_message(message.chat.id, text, reply_markup=get_default_markup())
+    bot.send_message(message.chat.id, "Фильтр включен", reply_markup=get_cancel_markup())
+    while message.text != CANCEL_STR:
+        # TODO custom HOST and PORT
+        mail_server = get_mail_server(mb.login, mb.password, EMAILS["Yandex"]["host"], EMAILS["Yandex"]["port"])
+        # TODO custom mails number
+        texts = get_emails_by_filter(mail_server, filter, 1)
+        for text in texts:
+            bot.send_message(message.chat.id, text)
+        time.sleep(5)
 
 def select_mail_login(message):
     if message.text == CANCEL_STR:

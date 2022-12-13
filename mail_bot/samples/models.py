@@ -29,6 +29,18 @@ class Mailbox(models.Model):
         max_length=128
     )
 
+    filter = models.CharField(
+        verbose_name='Filter',
+        max_length=128,
+        default='UNSEEN'
+    )
+
+    filter_translation = models.CharField(
+        verbose_name='Filter translation',
+        max_length=128,
+        default='Непрочитанные письма'
+    )
+
     user = models.ForeignKey(User,
                              null=True,
                              blank=True,

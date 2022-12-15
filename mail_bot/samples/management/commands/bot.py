@@ -41,6 +41,23 @@ FILTER_TYPE = {
 }
 
 
+def change_is_active(user, mb, is_active):
+    mail_box = Mailbox.objects.get(
+        user=user,
+        login=mb.login
+    )
+    mail_box.is_active_search = is_active
+    mail_box.save()
+
+
+def get_is_active(user, mb):
+    mail_box = Mailbox.objects.get(
+        user=user,
+        login=mb.login
+    )
+    return mail_box.is_active_search
+
+
 def update_filter_in_db(user, mb, filter, filter_translation):
     mail_box = Mailbox.objects.get(
         user=user,
@@ -163,6 +180,11 @@ def read_selected_mailbox(message):
 
 def new_filter_or_default(message, mb):
     if message.text == GET_CURRENT_FILTER:
+        change_is_active(
+            user=User.objects.get(telegram_id=message.from_user.username),
+            mb=mb,
+            is_active=True
+        )
         show_messages(message, mb.filter, mb)
     if message.text == CREATE_NEW_FILTER:
         bot.send_message(
@@ -193,6 +215,11 @@ def filter_enricher(message, current_filter, filter_translation, mb):
             filter=current_filter,
             filter_translation=filter_translation
         )
+        change_is_active(
+            user=User.objects.get(telegram_id=message.from_user.username),
+            mb=mb,
+            is_active=True
+        )
         show_messages(message, current_filter, mb)
     if message.text == SET_SENDER_STR:
         bot.send_message(message.chat.id, "Укажите желаемого отправителя", reply_markup=get_cancel_markup())
@@ -218,14 +245,25 @@ def filter_enricher_ack(message, current_filter, new_filter_type, filter_transla
 def show_messages(message, filter, mb: Mailbox):
     print("showing emails ", mb.login, mb.password)
     bot.send_message(message.chat.id, "Фильтр включен", reply_markup=get_cancel_markup())
-    while message.text != CANCEL_STR:
-        # TODO custom HOST and PORT
+    while get_is_active(
+            user=User.objects.get(telegram_id=message.from_user.username),
+            mb=mb
+        ):
         mail_server = get_mail_server(mb.login, mb.password, EMAILS["Yandex"]["host"], EMAILS["Yandex"]["port"])
-        # TODO custom mails number
         texts = get_emails_by_filter(mail_server, filter, 1)
         for text in texts:
             bot.send_message(message.chat.id, text)
+        bot.register_next_step_handler(message, end_filter_search, mb)
         time.sleep(5)
+
+
+def end_filter_search(message, mb):
+    change_is_active(
+        user=User.objects.get(telegram_id=message.from_user.username),
+        mb=mb,
+        is_active=False
+    )
+    bot.send_message(message.chat.id, "Отмена", reply_markup=get_default_markup())
 
 def select_mail_login(message):
     if message.text == CANCEL_STR:

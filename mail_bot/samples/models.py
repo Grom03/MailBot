@@ -41,6 +41,11 @@ class Mailbox(models.Model):
         default='Непрочитанные письма'
     )
 
+    is_active_search = models.BooleanField(
+        verbose_name='Is Active Search',
+        default=False
+    )
+
     user = models.ForeignKey(User,
                              null=True,
                              blank=True,

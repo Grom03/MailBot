@@ -5,6 +5,9 @@ from samples.management.commands.email_handlers.email_funcs import get_mail_serv
 import logging
 import time
 
+import html2text
+from bs4 import BeautifulSoup
+
 from samples.models import User, Mailbox
 
 logging.basicConfig(level=logging.INFO,
@@ -255,6 +258,25 @@ def show_messages(message, filter, mb: Mailbox):
             bot.send_message(message.chat.id, text)
         bot.register_next_step_handler(message, end_filter_search, mb)
         time.sleep(5)
+    # TODO custom HOST and PORT
+    mail_server = get_mail_server(mb.login, mb.password, EMAILS["Yandex"]["host"], EMAILS["Yandex"]["port"])
+    # TODO custom mails number
+    emails_by_filter = get_emails_by_filter(mail_server, filter, 1)
+
+    for email in emails_by_filter:
+        soup = BeautifulSoup(email, features="html.parser")
+        text = str(soup.get_text())
+        while '  ' in text:
+            text = text.replace('  ', ' ')
+        while '\t\t' in text:
+            text = text.replace('\t\t', '')
+        while ' \n' in text:
+            text = text.replace(' \n', '\n')
+        while ' \t' in text:
+            text = text.replace(' \t', '')
+        while '\n\n' in text:
+            text = text.replace('\n\n', '\n')
+        bot.send_message(message.chat.id, text, reply_markup=get_default_markup())
 
 
 def end_filter_search(message, mb):

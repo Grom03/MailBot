@@ -267,7 +267,7 @@ def show_messages(message, filter, mb: Mailbox):
                 text = text.replace(' \t', '')
             while '\n\n' in text:
                 text = text.replace('\n\n', '\n')
-            bot.send_message(message.chat.id, text, reply_markup=get_default_markup())
+            bot.send_message(message.chat.id, text)
         bot.register_next_step_handler(message, end_filter_search, mb)
         time.sleep(5)
 

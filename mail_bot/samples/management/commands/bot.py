@@ -159,6 +159,8 @@ def get_message(message):
         bot.send_message(message.chat.id, "Отмена", reply_markup=get_default_markup())
     if message.text == GET_MESSAGES_STR:
         select_mailbox(message)
+    if message.text == CHANGE_MAILBOX:
+        select_mail_login(message)
 
 
 def select_mailbox(message):
@@ -324,9 +326,13 @@ def save_mail(message, mail_login):
         bot.send_message(message.chat.id, f"Неправильный логин или пароль")
     if mail_id != "":
         try:
-            Mailbox.objects.get(mail_id=mail_id, login=mail_login, password=mail_password, user=User.objects.get(telegram_id=message.from_user.username))
+            user = User.objects.get(telegram_id=message.from_user.username)
+            old_mailbox = Mailbox.objects.get(user=user)
+            old_mailbox.delete()
+            new_mailbox = Mailbox(mail_id=mail_id, login=mail_login, password=mail_password, user=user)
+            new_mailbox.save()
             markup = get_default_markup()
-            bot.send_message(message.chat.id, f"Почта {mail_login} уже добавлена", reply_markup=markup)
+            bot.send_message(message.chat.id, f"Почта успешно изменена, новый почтовый адрес - {mail_login}", reply_markup=markup)
         except Mailbox.DoesNotExist:
             new_mailbox = Mailbox(mail_id=mail_id, login=mail_login, password=mail_password, user=User.objects.get(telegram_id=message.from_user.username))
             new_mailbox.save()

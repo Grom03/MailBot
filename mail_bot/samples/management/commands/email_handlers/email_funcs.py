@@ -33,7 +33,7 @@ def get_emails_by_filter(mail, filter, mails_number=None):
     return email_bodies
 
 
-def create_filter(message_type, from_mail=None, since=None) -> str:
+def create_filter(message_type, from_mail=None, since=None, subject=None) -> str:
     filter = message_type
     if from_mail:
         # format "noreply@id.yandex.ru"
@@ -41,6 +41,9 @@ def create_filter(message_type, from_mail=None, since=None) -> str:
     if since:
         # format "19-Sep-2022"
         filter += f" SENTSINCE {since}"
+    if subject:
+        # any format
+        filter += f" SUBJECT {subject}"
     print(filter)
     return filter
 

@@ -35,6 +35,7 @@ GET_ALL_NEW_STR = "Показать все новые"
 SET_SENDER_STR = "Указать отправителя"
 SET_DATE_FROM = "Настроить дату начала"
 FILTERS_DONE = "Готово"
+SET_SUBJECT_STR = "Настроить тему письма"
 
 FILTER_TYPE = {
     "Все письма": "ALL",
@@ -104,9 +105,10 @@ def get_current_filter_or_create_new():
 def get_edit_filters_markup():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     btn1 = types.KeyboardButton(SET_SENDER_STR)
-    btn2 = types.KeyboardButton(SET_DATE_FROM)
-    btn3 = types.KeyboardButton(FILTERS_DONE)
-    markup.add(btn1, btn2, btn3)
+    btn2 = types.KeyboardButton(SET_SUBJECT_STR)
+    btn3 = types.KeyboardButton(SET_DATE_FROM)
+    btn4 = types.KeyboardButton(FILTERS_DONE)
+    markup.add(btn1, btn2, btn3, btn4)
     return markup
 
 def log_errors(func):
@@ -142,12 +144,8 @@ def start_message(message):
             reply_markup=markup
         )
     else:
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        btn1 = types.KeyboardButton(CHANGE_MAILBOX)
-        btn2 = types.KeyboardButton(GET_MESSAGES_STR)
-        markup.add(btn1, btn2)
         bot.send_message(message.chat.id,
-                         f"Привет, {message.from_user.first_name}!\nАдрес твоей почты - {p.mailbox.login}")
+                         f"Привет, {message.from_user.first_name}!\nАдрес твоей почты - {p.mailbox.login}", reply_markup=get_default_markup())
 
 
 @log_errors
@@ -158,34 +156,19 @@ def get_message(message):
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Отмена", reply_markup=get_default_markup())
     if message.text == GET_MESSAGES_STR:
-        select_mailbox(message)
+        read_mailbox(message)
     if message.text == CHANGE_MAILBOX:
         select_mail_login(message)
 
 
-def select_mailbox(message):
+def read_mailbox(message):
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Отмена", reply_markup=get_default_markup())
         return
     user = User.objects.get(telegram_id=message.from_user.username)
-    mailboxes = user.mailboxes.all()
-    text = "Укажите адрес почты (число)\n"
-    for i, mailbox in enumerate(mailboxes):
-        text += str(i + 1) + ". " + mailbox.login + "\n"
-    bot.send_message(message.chat.id, text, reply_markup=get_cancel_markup())
-    bot.register_next_step_handler(message, read_selected_mailbox)
-
-
-def read_selected_mailbox(message):
-    if message.text == CANCEL_STR:
-        bot.send_message(message.chat.id, "Отмена", reply_markup=get_default_markup())
-        return
-    user = User.objects.get(telegram_id=message.from_user.username)
-    mailboxes = user.mailboxes.all()
+    mb = user.mailbox
     try:
-        count = int(message.text) - 1
-        mb = mailboxes[count]
-        text = "Ваш текущий фильтр: " + mb.filter_translation + "\n\n\nНастроить новый фильтр или использовать текущий?"
+        text = "Ваш текущий фильтр: " + mb.filter_translation + "\n\nНастроить новый фильтр или использовать текущий?"
         bot.send_message(message.chat.id, text, reply_markup=get_current_filter_or_create_new())
         bot.register_next_step_handler(message, new_filter_or_default, mb)
     except:
@@ -245,13 +228,21 @@ def filter_enricher(message, current_filter, filter_translation, mb):
         new_filter_type = "SENTSINCE"
         filter_translation += " после "
         bot.register_next_step_handler(message, filter_enricher_ack, current_filter, new_filter_type, filter_translation, mb)
+    if message.text == SET_SUBJECT_STR:
+        bot.send_message(message.chat.id, "Укажите желаемую тему письма", reply_markup=get_cancel_markup())
+        new_filter_type = "SUBJECT"
+        filter_translation += " с темой "
+        bot.register_next_step_handler(message, filter_enricher_ack, current_filter, new_filter_type, filter_translation, mb)
 
 
 def filter_enricher_ack(message, current_filter, new_filter_type, filter_translation, mb):
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Отмена", reply_markup=get_edit_filters_markup())
         return
-    current_filter += f' {new_filter_type} {message.text}'
+    if new_filter_type == 'SUBJECT':
+        current_filter += f' {new_filter_type} "{message.text}"'
+    else:
+        current_filter += f' {new_filter_type} {message.text}'
     filter_translation += message.text
     bot.send_message(message.chat.id, "Фильтр добавлен", reply_markup=get_edit_filters_markup())
     bot.register_next_step_handler(message, filter_enricher, current_filter, filter_translation, mb)
@@ -259,7 +250,7 @@ def filter_enricher_ack(message, current_filter, new_filter_type, filter_transla
 
 def show_messages(message, filter, mb: Mailbox):
     print("showing emails ", mb.login, mb.password)
-    bot.send_message(message.chat.id, "Фильтр включен", reply_markup=get_cancel_markup())
+    bot.send_message(message.chat.id, "Фильтр сохранён", reply_markup=get_cancel_markup())
     while get_is_active(
             user=User.objects.get(telegram_id=message.from_user.username),
             mb=mb

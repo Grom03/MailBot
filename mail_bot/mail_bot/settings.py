@@ -125,4 +125,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Настройки телеграмм бота
 
-TELEGRAM_TOKEN = "5920852971:AAHyWDW_3gOhtEbj26L1yiQzpy-nvmmWcmU"
+TELEGRAM_TOKEN = "5851557005:AAFC2rlSJfHaQw7SjW3BlJjcr9k8aNlR8oM"

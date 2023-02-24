@@ -1,3 +1,4 @@
+import base64
 import imaplib
 import email
 import email.message
@@ -45,12 +46,22 @@ def create_filter(message_type, from_mail=None, since=None) -> str:
     return filter
 
 
-def get_mail_server(login, password, host, port):
+def generate_oauth(login, token):
+    return 'user=%s\1auth=Bearer %s\1\1' % (login, token)
+
+
+def get_mail_server(login, password, host, port, auth_type):
     try:
-        mail = imaplib.IMAP4_SSL(host, port)
-        mail.login(login, password)
-        mail.select('INBOX')
-        return mail
+        if auth_type == "Password":
+            mail = imaplib.IMAP4_SSL(host, port)
+            mail.login(login, password)
+            mail.select('INBOX')
+            return mail
+        else:
+            mail = imaplib.IMAP4_SSL(host)
+            mail.authenticate('XOAUTH2', lambda x : generate_oauth(login, password))
+            mail.select('INBOX')
+            return mail
     except imaplib.IMAP4_SSL.error:
         return None
 

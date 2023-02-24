@@ -36,6 +36,8 @@ GET_ALL_NEW_STR = "Показать все новые"
 SET_SENDER_STR = "Указать отправителя"
 SET_DATE_FROM = "Настроить дату начала"
 FILTERS_DONE = "Готово"
+OAUTH_AUTHORIZATION = "OAuth Token"
+PASSWORD_AUTHORIZATION = "Password"
 
 FILTER_TYPE = {
     "Все письма": "ALL",
@@ -94,6 +96,13 @@ def get_default_markup():
     markup.add(btn1, btn2, btn3)
     return markup
 
+
+def get_auth_types():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    btn1 = types.KeyboardButton(OAUTH_AUTHORIZATION)
+    btn2 = types.KeyboardButton(PASSWORD_AUTHORIZATION)
+    markup.add(btn1, btn2)
+    return markup
 
 def get_current_filter_or_create_new():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -252,7 +261,7 @@ def show_messages(message, filter, mb: Mailbox):
             user=User.objects.get(telegram_id=message.from_user.username),
             mb=mb
         ):
-        mail_server = get_mail_server(mb.login, mb.password, EMAILS["Yandex"]["host"], EMAILS["Yandex"]["port"])
+        mail_server = get_mail_server(mb.login, mb.password, EMAILS["Yandex"]["host"], EMAILS["Yandex"]["port"], PASSWORD_AUTHORIZATION)
         texts = get_emails_by_filter(mail_server, filter, 1)
         for email in texts:
             soup = BeautifulSoup(email, features="html.parser")
@@ -292,19 +301,32 @@ def get_mail_login(message):
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Почта не добавлена", reply_markup=get_default_markup())
         return
-    bot.send_message(message.chat.id, f"Введите пароль:", reply_markup=get_cancel_markup())
-    bot.register_next_step_handler(message, save_mail, message.text)
+    if "@gmail.com" in message.text:
+        bot.send_message(message.chat.id, f"Выберите тип авторизации", reply_markup=get_auth_types())
+        bot.register_next_step_handler(message, get_type_of_auth, message.text)
+    else:
+        bot.send_message(message.chat.id, f"Введите пароль:", reply_markup=get_cancel_markup())
+        bot.register_next_step_handler(message, save_mail, message.text)
 
 
-def save_mail(message, mail_login):
+def get_type_of_auth(message, mail_login):
+    if message.text == OAUTH_AUTHORIZATION:
+        bot.send_message(message.chat.id, f"Введите токен:", reply_markup=get_cancel_markup())
+        bot.register_next_step_handler(message, save_mail, mail_login, OAUTH_AUTHORIZATION)
+    else:
+        bot.send_message(message.chat.id, f"Введите пароль:", reply_markup=get_cancel_markup())
+        bot.register_next_step_handler(message, save_mail, mail_login, PASSWORD_AUTHORIZATION)
+
+
+def save_mail(message, mail_login, auth_type):
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Почта не добавлена", reply_markup=get_default_markup())
         return
     mail_password = message.text
     mail_id = ""
     logging.info(f"Login and password {mail_login}, {mail_password}")
-    check_yandex_mail = get_mail_server(mail_login, mail_password, EMAILS["Yandex"]["host"], EMAILS["Yandex"]["port"])
-    check_google_mail = get_mail_server(mail_login, mail_password, EMAILS["Google"]["host"], EMAILS["Google"]["port"])
+    check_yandex_mail = get_mail_server(mail_login, mail_password, EMAILS["Yandex"]["host"], EMAILS["Yandex"]["port"], auth_type)
+    check_google_mail = get_mail_server(mail_login, mail_password, EMAILS["Google"]["host"], EMAILS["Google"]["port"], auth_type)
     if check_yandex_mail:
         mail_id = "Yandex"
     elif check_google_mail:
@@ -313,11 +335,21 @@ def save_mail(message, mail_login):
         bot.send_message(message.chat.id, f"Неправильный логин или пароль")
     if mail_id != "":
         try:
-            Mailbox.objects.get(mail_id=mail_id, login=mail_login, password=mail_password, user=User.objects.get(telegram_id=message.from_user.username))
+            if auth_type == OAUTH_AUTHORIZATION:
+                Mailbox.objects.get(mail_id=mail_id, login=mail_login, oauth_token=mail_password,
+                                    user=User.objects.get(telegram_id=message.from_user.username))
+            else:
+                Mailbox.objects.get(mail_id=mail_id, login=mail_login, password=mail_password,
+                                    user=User.objects.get(telegram_id=message.from_user.username))
             markup = get_default_markup()
             bot.send_message(message.chat.id, f"Почта {mail_login} уже добавлена", reply_markup=markup)
         except Mailbox.DoesNotExist:
-            new_mailbox = Mailbox(mail_id=mail_id, login=mail_login, password=mail_password, user=User.objects.get(telegram_id=message.from_user.username))
+            if auth_type == OAUTH_AUTHORIZATION:
+                new_mailbox = Mailbox(mail_id=mail_id, login=mail_login, oauth_token=mail_password,
+                                      user=User.objects.get(telegram_id=message.from_user.username))
+            else:
+                new_mailbox = Mailbox(mail_id=mail_id, login=mail_login, password=mail_password,
+                                      user=User.objects.get(telegram_id=message.from_user.username))
             new_mailbox.save()
             markup = get_default_markup()
             bot.send_message(message.chat.id, f"Почта {new_mailbox.login} успешно добавлена", reply_markup=markup)

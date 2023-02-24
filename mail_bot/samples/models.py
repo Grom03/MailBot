@@ -26,7 +26,14 @@ class Mailbox(models.Model):
 
     password = models.CharField(
         verbose_name='Password',
-        max_length=128
+        max_length=128,
+        null=True
+    )
+
+    oauth_token = models.CharField(
+        verbose_name='OAuth Token',
+        max_length=128,
+        null=True
     )
 
     filter = models.CharField(

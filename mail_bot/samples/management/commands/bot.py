@@ -1,14 +1,13 @@
-from django.core.management.base import BaseCommand
-from mail_bot import settings
-from telebot import TeleBot, types
-from samples.management.commands.email_handlers.email_funcs import get_mail_server, get_unseen_mails, get_emails_by_filter, create_filter
 import logging
 import time
 
-import html2text
 from bs4 import BeautifulSoup
-
+from django.core.management.base import BaseCommand
+from samples.management.commands.email_handlers.email_funcs import get_mail_server, get_emails_by_filter
 from samples.models import User, Mailbox
+from telebot import TeleBot, types
+
+from mail_bot import settings
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -27,9 +26,9 @@ EMAILS = {
 }
 
 CANCEL_STR = "Отменить"
-ADD_NEW_MAIL_STR = "Добавить новую почту"
+ADD_MAIL_STR = "Добавить почту"
 GET_MESSAGES_STR = "Посмотреть недавние сообщения"
-GET_ALL_MAILBOXES = "Мои добавленные почты"
+CHANGE_MAILBOX = "Поменять почту"
 GET_CURRENT_FILTER = "Оставить текущий фильтр"
 CREATE_NEW_FILTER = "Настроить новый фильтр"
 GET_ALL_NEW_STR = "Показать все новые"
@@ -90,10 +89,9 @@ def get_cancel_markup():
 
 def get_default_markup():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton(ADD_NEW_MAIL_STR)
-    btn2 = types.KeyboardButton(GET_ALL_MAILBOXES)
-    btn3 = types.KeyboardButton(GET_MESSAGES_STR)
-    markup.add(btn1, btn2, btn3)
+    btn1 = types.KeyboardButton(CHANGE_MAILBOX)
+    btn2 = types.KeyboardButton(GET_MESSAGES_STR)
+    markup.add(btn1, btn2)
     return markup
 
 
@@ -135,32 +133,44 @@ def log_errors(func):
 @log_errors
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    p, _ = User.objects.get_or_create(
+    p, created = User.objects.get_or_create(
         defaults={
             'telegram_id': message.from_user.username
         }
     )
-
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton(ADD_NEW_MAIL_STR)
-    markup.add(btn1)
-    # TODO добавить нормальное стартовое сообщение
-    bot.send_message(
-        message.chat.id,
-        f"Привет, {message.from_user.first_name}",
-        reply_markup=markup
-    )
+    if created:
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        btn1 = types.KeyboardButton(ADD_MAIL_STR)
+        markup.add(btn1)
+        bot.send_message(
+            message.chat.id,
+            f"Привет, {message.from_user.first_name}!\nДля начала работы с MailBot предлагаем создать пустой почтовый ящик,"
+            f"чтобы использовать его как сборщик почты с твоих личных почтовых ящиков. После создания нового аккаунта, "
+            f"просто добавь данные о почтовом ящике, нажав кнопку \"Добавить почту\". Далее рекомендуем настроить фильтры и "
+            f"ждать нужного письма!",
+            reply_markup=markup
+        )
+    else:
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        btn1 = types.KeyboardButton(CHANGE_MAILBOX)
+        btn2 = types.KeyboardButton(GET_MESSAGES_STR)
+        markup.add(btn1, btn2)
+        bot.send_message(message.chat.id,
+                         f"Привет, {message.from_user.first_name}!\nАдрес твоей почты - {p.mailbox.login}")
 
 
 @log_errors
 @bot.message_handler(content_types=['text'])
 def get_message(message):
-    if message.text == ADD_NEW_MAIL_STR:
+    if message.text == ADD_MAIL_STR:
         select_mail_login(message)
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Отмена", reply_markup=get_default_markup())
     if message.text == GET_MESSAGES_STR:
         select_mailbox(message)
+    if message.text == CHANGE_MAILBOX:
+        select_mail_login(message)
+
 
 def select_mailbox(message):
     if message.text == CANCEL_STR:
@@ -173,6 +183,7 @@ def select_mailbox(message):
         text += str(i + 1) + ". " + mailbox.login + "\n"
     bot.send_message(message.chat.id, text, reply_markup=get_cancel_markup())
     bot.register_next_step_handler(message, read_selected_mailbox)
+
 
 def read_selected_mailbox(message):
     if message.text == CANCEL_STR:
@@ -244,6 +255,7 @@ def filter_enricher(message, current_filter, filter_translation, mb):
         filter_translation += " после "
         bot.register_next_step_handler(message, filter_enricher_ack, current_filter, new_filter_type, filter_translation, mb)
 
+
 def filter_enricher_ack(message, current_filter, new_filter_type, filter_translation, mb):
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Отмена", reply_markup=get_edit_filters_markup())
@@ -288,6 +300,7 @@ def end_filter_search(message, mb):
         is_active=False
     )
     bot.send_message(message.chat.id, "Отмена", reply_markup=get_default_markup())
+
 
 def select_mail_login(message):
     if message.text == CANCEL_STR:
@@ -335,14 +348,17 @@ def save_mail(message, mail_login, auth_type):
         bot.send_message(message.chat.id, f"Неправильный логин или пароль")
     if mail_id != "":
         try:
+            user = User.objects.get(telegram_id=message.from_user.username)
+            old_mailbox = Mailbox.objects.get(user=user)
+            old_mailbox.delete()
             if auth_type == OAUTH_AUTHORIZATION:
-                Mailbox.objects.get(mail_id=mail_id, login=mail_login, oauth_token=mail_password,
-                                    user=User.objects.get(telegram_id=message.from_user.username))
+                new_mailbox = Mailbox(mail_id=mail_id, login=mail_login, oauth_token=mail_password, user=user)
+                new_mailbox.save()
             else:
-                Mailbox.objects.get(mail_id=mail_id, login=mail_login, password=mail_password,
-                                    user=User.objects.get(telegram_id=message.from_user.username))
+                new_mailbox = Mailbox(mail_id=mail_id, login=mail_login, password=mail_password, user=user)
+                new_mailbox.save()
             markup = get_default_markup()
-            bot.send_message(message.chat.id, f"Почта {mail_login} уже добавлена", reply_markup=markup)
+            bot.send_message(message.chat.id, f"Почта успешно изменена, новый почтовый адрес - {mail_login}", reply_markup=markup)
         except Mailbox.DoesNotExist:
             if auth_type == OAUTH_AUTHORIZATION:
                 new_mailbox = Mailbox(mail_id=mail_id, login=mail_login, oauth_token=mail_password,

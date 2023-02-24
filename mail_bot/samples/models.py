@@ -53,10 +53,9 @@ class Mailbox(models.Model):
         default=False
     )
 
-    user = models.ForeignKey(User,
-                             null=True,
-                             blank=True,
-                             related_name='mailboxes',
-                             related_query_name='mailboxes',
-                             on_delete=models.SET_NULL)
-
+    user = models.OneToOneField(User,
+                                null=True,
+                                blank=True,
+                                related_name='mailbox',
+                                related_query_name='mailbox',
+                                on_delete=models.CASCADE)

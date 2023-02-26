@@ -331,7 +331,7 @@ def get_type_of_auth(message, mail_login):
         bot.register_next_step_handler(message, save_mail, mail_login, PASSWORD_AUTHORIZATION)
 
 
-def save_mail(message, mail_login, auth_type):
+def save_mail(message, mail_login, auth_type=PASSWORD_AUTHORIZATION):
     if message.text == CANCEL_STR:
         bot.send_message(message.chat.id, "Почта не добавлена", reply_markup=get_default_markup())
         return

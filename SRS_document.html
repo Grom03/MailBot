@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<title></title>
+</head>
+<body lang="ru-RU" link="#000080" vlink="#800000" dir="ltr"><p align="center">
+<font size="6" style="font-size: 30pt">Спецификация
+требований программного обеспечения.</font></p>
+<p align="center"><font size="6" style="font-size: 30pt">MAIL
+BOT</font></p>
+<p><br/>
+<h1><a name="content"></a>Содержание</h1>
+
+<p><br/>
+
+</p>
+<div id="Table of Contents2" dir="ltr"><p>
+	<font color="#000000" face="Arial" size="4"><a href="#content">Содержание</a></font></p>
+	<p>
+	<font color="#000000" face="Arial" size="4"><a href="#intro">Введение</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#purpose>Цель</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#area">Область</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#definitions">Определения</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#overview">Обзор</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#description">Описание</a></font></p>
+	<p>
+	<font color="#000000" face="Arial" size="4"><a href="#special_requirements">Особые требования</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#functional_requirements">Функциональные требования</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#ease_of_use">Удобство использования</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#reliability">Надежность</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#efficiency">Производительность</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#support">Поддержка</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#design_limitations">Ограничения проектирования</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#documentation">Документация</a></font></p>
+	<p>
+	<font color="#000000" face="Arial" size="4"><a href="#interface">Интерфейсы</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#user_interface">Интерфейс пользователя</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#hardware_interface">Интерфейс с аппаратным обеспечением</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#software_interface">Интерфейс с программным обеспечением</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#communication_interface">Интерфейсы коммуникации</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0in">
+	<font color="#000000" face="Arial" size="4"><a href="#licensing_requirements">Требования к лицензированию</a></font></p>
+	<p style="line-height: 100%; margin-left: 0.25in; margin-top: 0.04in; margin-bottom: 0.06in">
+	<font color="#000000" face="Arial" size="4"><a href="#applicable_standarts">Применимые стандарты</a></font></p>
+</div>
+<p><br/>
+
+</p>
+<h1><a name="intro"></a>Введение</h1>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Целью этого документа является описание
+требований к программному обеспечению в виде телеграмм бота, который присылает
+уведомления из почты по выбранным критериям.</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="area"></a>Область</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Телеграмм бот должен пересылать письма из почты
+в телеграмм по выбранным критериям, таким как имя отправителя, тема письма и тд.</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="definitions"></a>Определения</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt"><b>Бот
+в Telegram</b> – это разновидность чат-бота, который позволяет
+пользователю осуществлять определенные действия через мессенджер.</font></p>
+<p><font size="4" style="font-size: 14pt"><b>API</b> – описание способов взаимодействия
+одной компьютерной программы с другими.
+</font>
+</p>
+<p><<font size="4" style="font-size: 14pt"><b>Почтовый
+клиент</b> - программа для <b>чтения электронной</b> почты или, более формально, <b>message
+user agent</b> (MUA) или <b>mail user agent</b>
+- это компьютерная программа, используемая для доступа к электронной почте
+пользователя и управления ею.</font></p>
+<p><br/>
+
+</p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="overview"></a>Обзор</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Данный
+документ содержит описание продукта и его технические требования.</font></p>
+
+<h2 class="small"><a name="description"></a>Описание</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Конечный продукт будет представлять из себя
+Telegram-бота. Все вычисления будут производиться на удаленном сервере.
+Серверная часть будет реализована на языке python с использованием библиотек
+для работы с СУБД. В базе данных будет храниться необходимая информация о пользователях.<br/>
+Пользователь продукта – это человек с существующими Telegram-аккаунтом и электронной почтой,
+который хочет получить возможность взаимодействовать со своим электронным почтовым ящиком, не покидая Telegram.<br/>
+Продукт будет доступен на всех платформах, под которые существуют клиенты Telegram с
+поддержкой ботов. (Microsoft Windows, GNU/Linux, MacOS, Android, IOS, etc.)</font></p>
+
+<p><font size="4" style="font-size: 14pt">Продукт не будет зависеть от наличия каких-либо
+сторонних библиотек или софта, кроме самого клиента Telegram.</font></p>
+<p><br/>
+
+</p>
+<h1><a name="special_requirements"></a>Особые требования</h1>
+<h2 class="small"><a name="functional_requirements"></a>Функциональные требования</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Телеграмм бот со следующими функциями:</font></p>
+<ol>
+	<li><p><font size="4" style="font-size: 14pt">Возможность
+	регистрации через API в почте при помощи логина и пароля пользователя</font></p>
+	<li><p><font size="4" style="font-size: 14pt">Выбор критериев для пересылки писем, таких как:</font></p>
+	<ol>
+		<li><p><font size="4" style="font-size: 14pt">Отправитель письма</font></p>
+		<li><p><font size="4" style="font-size: 14pt">Тема письма</font></p>
+	</ol>
+	<li><p><font size="4" style="font-size: 14pt">Выбор формата вывода письма в телеграмм.</font></p>
+	<ol>
+		<li><p><font size="4" style="font-size: 14pt">Тема и отправитель письма</font></p>
+		<li><p><font size="4" style="font-size: 14pt">Полный текст письма</font></p>
+		<li><p><font size="4" style="font-size: 14pt">Полный текст письма со всеми вложениями</font></p>
+	</ol>
+	<li><p><font size="4" style="font-size: 14pt">Вывод недавних писем от конкретного отправителя</font></p>
+</ol>
+
+<h2 class="small"><a name="ease_of_use"></a>Удобство использования</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Бот должен быть интуитивно понятен, для каждой функции должны быть перечислены
+все возможные варианты действий.</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="reliability"></a>Надежность</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Бот должен работать быстро (от 3 до 7 секунд
+в зависимости от количества писем) и корректно, при возникновении ошибок присылать их текстовым сообщением с расшифровкой ошибки.</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="efficiency"></a>Производительность</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Время ответа на запрос пользователя не должно превышать 10 секунд.</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="support"></a>Поддержка</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Будут использоваться система контроля версий, unit-тестирование.</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="design_limitations"></a>Ограничения проектирования</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Бот должен быть написан при помощи Python с использованием SQL.</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="_ly4t21rajzoi"></a><br/>
+<br/>
+
+</h2>
+<h2 class="small"><a name="documentation"></a>Документация</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Подробная документация по использованию телеграмм
+бота с описанием реализованных функций будет описана на github</font></p>
+<p><br/>
+
+</p>
+<h1><a name="interface"></a>Интерфейсы</h1>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="user_interface"></a>Интерфейс пользователя</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Телеграмм бот с выбором необходимых функций из
+списка и вводом текстовых значений в виде сообщений.</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="hardware_interface"></a>Интерфейс с аппаратным обеспечением</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Бот запускается с любого программного обеспечения при помощи приложения Telegram.</font></p>
+<p><br/>
+
+</h2>
+<h2 class="small"><a name="software_interface"></a>Интерфейс с программным обеспечением</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Планируется взаимодействие с API Telegram, а также с API почт.<br/>
+Используемые библиотеки - logging, imaplib, email, telegram.</font></p>
+<p><br/>
+
+</h2>
+<h2 class="small"><a name="communication_interface"></a>Интерфейсы
+коммуникации</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Не планируется.</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="licensing_requirements"></a>Требования к лицензированию</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Отсутствуют</font></p>
+<p><br/>
+
+</p>
+<h2 class="small"><a name="applicable_standarts"></a>Применимые стандарты</h2>
+<p><br/>
+
+</p>
+<p><font size="4" style="font-size: 14pt">Стандарты ОС</font></p>
+
+</body>
+</html>
